@@ -1,0 +1,22 @@
+# exclude debug output
+.vs/
+bin/
+debug/
+x86/
+x64/
+release/
+doc/
+CommanderDLL/
+obj/
+
+# exclude binaries
+*.exe
+*.dll
+*.pdb
+*.idb
+*.obj
+
+# exclude personal settings
+*.vcxproj.user
+*.code-workspace
+*user-definitions.h
