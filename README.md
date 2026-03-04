@@ -40,16 +40,37 @@ The actual `syscall` instruction lives in a hand-written MASM stub (`syscall_dis
 ## Building
 
 **Requirements:**
-- Visual Studio 2022 (any edition)
-- Windows 10 SDK
-- MASM (included with VS — enabled automatically via `.vcxproj`)
+- Python 3.10+
+- Visual Studio 2022 (any edition) with MASM support
 
-**Open & Build:**
-1. Open `siscall.sln` in Visual Studio 2022
-2. Select **Release | x64**
-3. Build → the executable appears at `Release\siscall.exe`
+### Recommended — `build.py` (version-aware)
 
-**Command-line (MSBuild):**
+The build script reads the bundled j00ru syscall database (`windows-syscalls/x64/json/nt-per-syscall.json`), lets you select the exact Windows version you're targeting, auto-generates the correct `syscall_numbers.h` with verified ROL-XOR encoded constants, then calls MSBuild.
+
+```
+# Interactive version picker
+python build.py
+
+# Non-interactive
+python build.py --os "Windows 10" --ver "22H2"
+python build.py --os "Windows 11 and Server" --ver "11 24H2"
+
+# List all available versions
+python build.py --list
+
+# Generate header only, skip build
+python build.py --os "Windows 11 and Server" --ver "11 24H2" --dry-run
+
+# Debug build
+python build.py --os "Windows 10" --ver "22H2" --config Debug
+```
+
+Output: `Release\siscall.exe` (or `Debug\siscall.exe`)
+
+### Manual — MSBuild directly
+
+If you just want to rebuild without changing the target OS:
+
 ```
 msbuild siscall.sln /p:Configuration=Release /p:Platform=x64
 ```
@@ -131,3 +152,10 @@ siscall/
 - **Architecture:** x64 only. The technique is architecture-specific.
 - **Windows version:** Syscall numbers are calibrated for Windows 10 21H2 / Windows 11 22H2 x64. Numbers rarely change across minor builds but can differ on very old or insider builds.
 - **Detection:** While this technique defeats usermode hooks, kernel-level ETW providers and hypervisor-based monitors (e.g. VTx EPT hooks) will still observe the raw `syscall` instruction. The `RIP` at syscall time will point into this binary's `.text` section rather than `ntdll!Nt*`, which is itself a detectable signal.
+
+---
+
+## References
+
+- [j00ru/windows-syscalls](https://github.com/j00ru/windows-syscalls) — Windows NT/win32k syscall tables across all major OS versions (XP → Win11 25H2), used by `build.py` to generate version-accurate syscall number encodings.
+- [Cerebro Anti-Cheat Analysis — UnknownCheats](https://www.unknowncheats.me/forum/anti-cheat-bypass/732919-cerebro-analysis.html) — Static reverse engineering analysis of the Cerebro/Theia anti-cheat engine, documenting the ROL-XOR syscall obfuscation pattern, hook-detection shims, and behavioral analysis engine that inspired this POC.
