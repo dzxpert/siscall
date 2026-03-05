@@ -29,12 +29,17 @@ extern "C" NTSTATUS DoSyscall(
 // ---------------------------------------------------------------------------
 namespace IndirectSyscall
 {
-    // Resolved syscall number table — populated by init()
-    extern uint32_t g_NtQSI;   // NtQuerySystemInformation
-    extern uint32_t g_NtAVM;   // NtAllocateVirtualMemory
-    extern uint32_t g_NtFVM;   // NtFreeVirtualMemory
-    extern uint32_t g_NtWVM;   // NtWriteVirtualMemory
-    extern uint32_t g_NtClose; // NtClose
+    // Resolved syscall number table — populated by init(), then
+    // VirtualProtect'd to PAGE_READONLY to prevent post-init tampering.
+    struct SyscallNumbers
+    {
+        uint32_t NtQSI;    // NtQuerySystemInformation
+        uint32_t NtAVM;    // NtAllocateVirtualMemory
+        uint32_t NtFVM;    // NtFreeVirtualMemory
+        uint32_t NtWVM;    // NtWriteVirtualMemory
+        uint32_t NtClose;  // NtClose
+    };
+    extern SyscallNumbers g_SysNums;
 
     // Hook-detection results (populated by init(), cosmetic only)
     extern bool g_NtQSI_hooked;
@@ -54,7 +59,7 @@ namespace IndirectSyscall
         PULONG ReturnLength)
     {
         return DoSyscall(
-            &g_NtQSI,
+            &g_SysNums.NtQSI,
             static_cast<uintptr_t>(SystemInformationClass),
             reinterpret_cast<uintptr_t>(SystemInformation),
             static_cast<uintptr_t>(SystemInformationLength),
@@ -75,7 +80,7 @@ namespace IndirectSyscall
         ULONG     Protect)
     {
         return DoSyscall(
-            &g_NtAVM,
+            &g_SysNums.NtAVM,
             reinterpret_cast<uintptr_t>(ProcessHandle),
             reinterpret_cast<uintptr_t>(BaseAddress),
             static_cast<uintptr_t>(ZeroBits),
@@ -94,7 +99,7 @@ namespace IndirectSyscall
         ULONG   FreeType)
     {
         return DoSyscall(
-            &g_NtFVM,
+            &g_SysNums.NtFVM,
             reinterpret_cast<uintptr_t>(ProcessHandle),
             reinterpret_cast<uintptr_t>(BaseAddress),
             reinterpret_cast<uintptr_t>(RegionSize),
@@ -114,7 +119,7 @@ namespace IndirectSyscall
         PSIZE_T NumberOfBytesWritten)
     {
         return DoSyscall(
-            &g_NtWVM,
+            &g_SysNums.NtWVM,
             reinterpret_cast<uintptr_t>(ProcessHandle),
             reinterpret_cast<uintptr_t>(BaseAddress),
             reinterpret_cast<uintptr_t>(Buffer),
