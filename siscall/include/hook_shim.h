@@ -45,7 +45,8 @@ struct ShimResult
 //
 // clean_stub  — address of our own syscall stub (returned regardless)
 // delta       — VA delta that would be added on the hooked path (logged only)
-inline ShimResult Shim_Detect(const char* ntdll_export_name,
+inline ShimResult Shim_Detect(HMODULE     ntdll,
+                               const char* ntdll_export_name,
                                void*       clean_stub,
                                uint32_t    delta = 0)
 {
@@ -54,7 +55,6 @@ inline ShimResult Shim_Detect(const char* ntdll_export_name,
     result.hooked         = false;
     result.prologue_bytes = 0;
 
-    HMODULE ntdll = GetModuleHandleA("ntdll.dll");
     if (!ntdll)
         return result;
 

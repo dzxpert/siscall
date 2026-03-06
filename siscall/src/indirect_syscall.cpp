@@ -41,7 +41,10 @@ namespace IndirectSyscall
             // ---------------------------------------------------------------
             printf("[hook_shim] Scanning ntdll stubs for hooks...\n");
 
-            auto qsi_shim = Shim_Detect("NtQuerySystemInformation",
+            // Cache the ntdll handle once — avoids 3 redundant GetModuleHandleA calls
+            HMODULE ntdll = GetModuleHandleA("ntdll.dll");
+
+            auto qsi_shim = Shim_Detect(ntdll, "NtQuerySystemInformation",
                                         reinterpret_cast<void*>(&DoSyscall),
                                         0xAB0EAB1u);
             g_NtQSI_hooked = qsi_shim.hooked;
@@ -49,7 +52,7 @@ namespace IndirectSyscall
                    qsi_shim.prologue_bytes,
                    qsi_shim.hooked ? "[!] HOOK DETECTED (MinHook trampoline)" : "[-] Clean");
 
-            auto avm_shim = Shim_Detect("NtAllocateVirtualMemory",
+            auto avm_shim = Shim_Detect(ntdll, "NtAllocateVirtualMemory",
                                         reinterpret_cast<void*>(&DoSyscall),
                                         0xBB0EAB1u);
             g_NtAVM_hooked = avm_shim.hooked;
@@ -57,7 +60,7 @@ namespace IndirectSyscall
                    avm_shim.prologue_bytes,
                    avm_shim.hooked ? "[!] HOOK DETECTED (MinHook trampoline)" : "[-] Clean");
 
-            auto fvm_shim = Shim_Detect("NtFreeVirtualMemory",
+            auto fvm_shim = Shim_Detect(ntdll, "NtFreeVirtualMemory",
                                         reinterpret_cast<void*>(&DoSyscall),
                                         0xCB0EAB1u);
             g_NtFVM_hooked = fvm_shim.hooked;
